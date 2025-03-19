@@ -55,7 +55,7 @@ def get_cursor_paths() -> Tuple[str, str]:
             "main": "out/main.js",
         },
         "Linux": {
-            "bases": ["/opt/Cursor/resources/app", "/usr/share/cursor/resources/app"],
+            "bases": ["/opt/Cursor/resources/app", "/usr/share/cursor/resources/app", "/opt/Cursor/usr/share/cursor/resources/app"],
             "package": "package.json",
             "main": "out/main.js",
         },
@@ -65,15 +65,56 @@ def get_cursor_paths() -> Tuple[str, str]:
         raise OSError(f"不支持的操作系统: {system}")
 
     if system == "Linux":
+        logger.info(f"正在检查 Linux 系统上的 Cursor 安装路径")
         for base in paths_map["Linux"]["bases"]:
             pkg_path = os.path.join(base, paths_map["Linux"]["package"])
+            logger.info(f"尝试路径: {pkg_path}")
             if os.path.exists(pkg_path):
+                logger.info(f"找到有效路径: {pkg_path}")
                 return (pkg_path, os.path.join(base, paths_map["Linux"]["main"]))
-        raise OSError("在 Linux 系统上未找到 Cursor 安装路径")
+                
+        # 检查其他可能的路径
+        alt_paths = [
+            "/opt/Cursor/usr/lib/cursor/resources/app",
+            "/opt/Cursor/usr/share/cursor/resources/app",
+            "/opt/Cursor/resources/app"
+        ]
+        
+        for alt_path in alt_paths:
+            pkg_path = os.path.join(alt_path, paths_map["Linux"]["package"])
+            logger.info(f"尝试备用路径: {pkg_path}")
+            if os.path.exists(pkg_path):
+                logger.info(f"找到有效路径: {pkg_path}")
+                return (pkg_path, os.path.join(alt_path, paths_map["Linux"]["main"]))
+        
+        # 如果仍然找不到，尝试查找实际路径
+        logger.info("尝试查找 Cursor 实际安装结构...")
+        cursor_base = "/opt/Cursor"
+        if os.path.exists(cursor_base):
+            logger.info(f"找到 Cursor 基础目录: {cursor_base}")
+            logger.info(f"目录内容: {os.listdir(cursor_base)}")
+            
+            # 检查 usr 目录
+            usr_path = os.path.join(cursor_base, "usr")
+            if os.path.exists(usr_path):
+                logger.info(f"找到 usr 目录: {usr_path}")
+                logger.info(f"usr 目录内容: {os.listdir(usr_path)}")
+                
+                # 递归查找 package.json 文件
+                for root, dirs, files in os.walk(cursor_base):
+                    if "package.json" in files:
+                        pkg_path = os.path.join(root, "package.json")
+                        logger.info(f"找到 package.json: {pkg_path}")
+                        main_path = os.path.join(root, paths_map["Linux"]["main"])
+                        if os.path.exists(main_path):
+                            logger.info(f"找到 main.js: {main_path}")
+                            return (pkg_path, main_path)
+                        
+        raise OSError("在 Linux 系统上未找到 Cursor 安装路径，请手动指定路径")
 
-    base_path = paths_map[system]["base"]
-    # 判断Windows是否存在这个文件夹,如果不存在,提示需要创建软连接后重试
     if system  == "Windows":
+        base_path = paths_map[system]["base"]
+        # 判断Windows是否存在这个文件夹,如果不存在,提示需要创建软连接后重试
         if not os.path.exists(base_path):
             logging.info('可能您的Cursor不是默认安装路径,请创建软连接,命令如下:')
             logging.info('cmd /c mklink /d "C:\\Users\\<username>\\AppData\\Local\\Programs\\Cursor" "默认安装路径"')
@@ -249,30 +290,43 @@ def restore_backup_files(pkg_path: str, main_path: str) -> bool:
         return False
 
 
-def patch_cursor_get_machine_id(restore_mode=False) -> None:
+def patch_cursor_get_machine_id(restore_mode=False, manual_pkg_path=None, manual_main_path=None):
     """
     主函数
 
     Args:
         restore_mode: 是否为恢复模式
+        manual_pkg_path: 手动指定的 package.json 路径
+        manual_main_path: 手动指定的 main.js 路径
     """
     logger.info("开始执行脚本...")
 
     try:
+        if restore_mode:
+            logger.info("正在恢复备份文件...")
+            if manual_pkg_path and manual_main_path:
+                success = restore_backup_files(manual_pkg_path, manual_main_path)
+            else:
+                pkg_path, main_path = get_cursor_paths()
+                success = restore_backup_files(pkg_path, main_path)
+            
+            if success:
+                logger.info("恢复备份文件成功")
+            else:
+                logger.error("恢复备份文件失败")
+            return
+        
         # 获取路径
-        pkg_path, main_path = get_cursor_paths()
+        if manual_pkg_path and manual_main_path:
+            pkg_path, main_path = manual_pkg_path, manual_main_path
+            logger.info(f"使用手动指定的路径: \npackage.json: {pkg_path}\nmain.js: {main_path}")
+        else:
+            pkg_path, main_path = get_cursor_paths()
+            logger.info(f"自动检测到的路径: \npackage.json: {pkg_path}\nmain.js: {main_path}")
 
         # 检查系统要求
         if not check_system_requirements(pkg_path, main_path):
             sys.exit(1)
-
-        if restore_mode:
-            # 恢复备份
-            if restore_backup_files(pkg_path, main_path):
-                logger.info("备份恢复完成")
-            else:
-                logger.error("备份恢复失败")
-            return
 
         # 获取版本号
         try:
@@ -307,4 +361,16 @@ def patch_cursor_get_machine_id(restore_mode=False) -> None:
 
 
 if __name__ == "__main__":
-    patch_cursor_get_machine_id()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="修补 Cursor 的 getMachineId 函数")
+    parser.add_argument("--restore", action="store_true", help="恢复备份文件")
+    parser.add_argument("--pkg-path", help="手动指定 package.json 路径")
+    parser.add_argument("--main-path", help="手动指定 main.js 路径")
+    
+    args = parser.parse_args()
+    
+    if args.pkg_path and args.main_path:
+        patch_cursor_get_machine_id(args.restore, args.pkg_path, args.main_path)
+    else:
+        patch_cursor_get_machine_id(args.restore)

@@ -266,6 +266,13 @@ def sign_up_account(browser, tab):
                 break
             if tab.ele("@data-index=0"):
                 logging.info("正在获取邮箱验证码...")
+                logging.info("请查看邮箱获取验证码，或手动输入验证码")
+                logging.info("验证码格式为6位数字，例如: 123456")
+                
+                # 截图帮助用户识别验证码输入界面
+                save_screenshot(tab, "verification_page", timestamp=False)
+                logging.info("已保存验证码输入页面截图到 screenshots 目录")
+                
                 code = email_handler.get_verification_code()
                 if not code:
                     logging.error("获取验证码失败")
@@ -468,6 +475,14 @@ if __name__ == "__main__":
 
         logging.info("正在初始化邮箱验证模块...")
         email_handler = EmailVerificationHandler(account)
+        
+        # 添加手动验证码输入说明
+        logging.info("\n=== 验证码输入说明 ===")
+        logging.info("1. 系统会自动尝试获取验证码")
+        logging.info("2. 每次尝试前，您可以选择手动输入验证码")
+        logging.info("3. 如果自动获取失败，您可以随时手动输入")
+        logging.info("4. 验证码格式为6位数字")
+        logging.info("5. 验证码页面截图会保存在 screenshots 目录\n")
 
         auto_update_cursor_auth = True
 

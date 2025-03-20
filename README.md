@@ -1,3 +1,9 @@
+# Ubuntu 安装cursor
+./cursor-0.45.11x86_64.AppImage --appimage-extract
+sudo mv squashfs-root /opt/Cursor
+/opt/Cursor/AppRun
+
+
 # Cursor Pro 自动化工具使用说明
 
 

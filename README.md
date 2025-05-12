@@ -16,10 +16,6 @@ sudo mv squashfs-root /opt/Cursor
 [cursor-auto-free-doc.vercel.app](https://cursor-auto-free-doc.vercel.app)
 
 
-## 公众号 回复 1 获取 qq 群
-
-![公众号](./screen/qrcode_for_gh_c985615b5f2b_258.jpg)
-
 ## 英文名字集
 https://github.com/toniprada/usa-names-dataset
 
@@ -49,9 +45,6 @@ https://linux.do/
 ### 开源项目
 - [go-cursor-help](https://github.com/yuaotian/go-cursor-help) - 一个优秀的 Cursor 机器码重置工具，本项目的机器码重置功能使用该项目实现。该项目目前已获得 9.1k Stars，是最受欢迎的 Cursor 辅助工具之一。
 
-## 请我喝杯茶 | buy me a cup of tea
-<img src="./screen/image.png" width="300"/>
-<img src="./screen/28613e3f3f23a935b66a7ba31ff4e3f.jpg" width="300"/>
- <img src="./screen/mm_facetoface_collect_qrcode_1738583247120.png" width="300"/>
+### 本项目克隆自https://github.com/chengazhen/cursor-auto-free，增加获取长期token功能，以及手动输入验证码的功能
 
 

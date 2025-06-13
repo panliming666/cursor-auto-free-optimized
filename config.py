@@ -25,21 +25,45 @@ class Config:
         load_dotenv(dotenv_path)
 
         self.imap = False
-        self.temp_mail = os.getenv("TEMP_MAIL", "").strip().split("@")[0]
-        self.temp_mail_epin = os.getenv("TEMP_MAIL_EPIN", "").strip()
-        self.temp_mail_ext = os.getenv("TEMP_MAIL_EXT", "").strip()
-        self.domain = os.getenv("DOMAIN", "").strip()
+        self.temp_mail = self._clean_env_value(os.getenv("TEMP_MAIL", "")).split("@")[0]
+        self.temp_mail_epin = self._clean_env_value(os.getenv("TEMP_MAIL_EPIN", ""))
+        self.temp_mail_ext = self._clean_env_value(os.getenv("TEMP_MAIL_EXT", ""))
+        self.domain = self._clean_env_value(os.getenv("DOMAIN", ""))
 
         # 如果临时邮箱为null则加载IMAP
         if self.temp_mail == "null":
             self.imap = True
-            self.imap_server = os.getenv("IMAP_SERVER", "").strip()
-            self.imap_port = os.getenv("IMAP_PORT", "").strip()
-            self.imap_user = os.getenv("IMAP_USER", "").strip()
-            self.imap_pass = os.getenv("IMAP_PASS", "").strip()
-            self.imap_dir = os.getenv("IMAP_DIR", "inbox").strip()
+            self.imap_server = self._clean_env_value(os.getenv("IMAP_SERVER", ""))
+            self.imap_port = self._clean_env_value(os.getenv("IMAP_PORT", ""))
+            self.imap_user = self._clean_env_value(os.getenv("IMAP_USER", ""))
+            self.imap_pass = self._clean_env_value(os.getenv("IMAP_PASS", ""))
+            self.imap_dir = self._clean_env_value(os.getenv("IMAP_DIR", "inbox"))
 
         self.check_config()
+
+    def _clean_env_value(self, value):
+        """清理环境变量值，移除引号和注释
+
+        Args:
+            value: 原始环境变量值
+
+        Returns:
+            str: 清理后的值
+        """
+        if not value:
+            return ""
+
+        # 移除首尾空白
+        value = value.strip()
+
+        # 移除引号
+        value = value.strip("'\"")
+
+        # 移除注释（以 # 开头的部分）
+        if '#' in value:
+            value = value.split('#')[0].strip()
+
+        return value
 
     def get_temp_mail(self):
 
@@ -69,11 +93,11 @@ class Config:
 
     def get_protocol(self):
         """获取邮件协议类型
-        
+
         Returns:
             str: 'IMAP' 或 'POP3'
         """
-        return os.getenv('IMAP_PROTOCOL', 'POP3')
+        return self._clean_env_value(os.getenv('IMAP_PROTOCOL', 'POP3'))
 
     def check_config(self):
         """检查配置项是否有效
